@@ -348,6 +348,9 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
+<<<<<<< HEAD
 
 # excludes sensitive information
 App.config
+=======
+>>>>>>> 13b115ffd01ac36c664eec91f4b5c1050737cf36
