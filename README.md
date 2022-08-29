@@ -7,14 +7,14 @@ This repo was created due to the requirement of synchronous data between two SQL
 
 1. [Download](https://github.com/ZXS66/SQLServerSync/releases) the executable file (or you can clone this repo and build the file yourself)
 2. Configure the app in [App.config](#Sample-App-config). Supporting arguments as below:
-    - `mode`: e/export or i/import
+    - `syncMode`: e/export or i/import
     - `source`: source table to be exported
     - `destination`: destination table to be imported
     - `sourceDB` connection string: connection string of source database, refer to [this manual](https://www.connectionstrings.com/sql-server/) for more details
     - `destinationDB` connection string: connection string of destination database, refer to [this manual](https://www.connectionstrings.com/sql-server/) for more details
-3. Run the app (twice times) within the isolated environments:
+3. Run the app (twice times) within the isolated environments (double click or type below command in Windows Terminal/Powershell):
     ```
-    ./SQLServerSync.exe
+    .\SQLServerSync.exe
     ```
     **CAUTION: the command will truncate destination table before importing, please backup the destination table before running the app!!!**
 
