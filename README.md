@@ -1,18 +1,21 @@
 
 # Background
 
-This repo was created due to the requirement of synchronous data between two SQL Server instances which was located in two isolated environment (can NOT connect to each other directly).
+This repo is aim to the synchronize data between two SQL Server instances, which were located in two isolated environments (can NOT communicate with each other directly).
 
 # How to use
 
 1. [Download](https://github.com/ZXS66/SQLServerSync/releases) the executable file (or you can clone this repo and build the file yourself)
-2. Configure the app in [App.config](#Sample-App-config). Supporting arguments as below:
+2. Configure the app (twice times) in [App.config](#sample-appconfig). Supporting arguments as below:
     - `syncMode`: e/export or i/import
     - `source`: source table to be exported
     - `destination`: destination table to be imported
+	- `fileFormat`: the extension of exported file, available options: `csv`, `excel`
+	- `fileFolder`: the folder that exported file to be saved (`./data` if not specified)
+	- `intervalInSecond`: the interval (in seconds) to re-run the app
     - `sourceDB` connection string: connection string of source database, refer to [this manual](https://www.connectionstrings.com/sql-server/) for more details
     - `destinationDB` connection string: connection string of destination database, refer to [this manual](https://www.connectionstrings.com/sql-server/) for more details
-3. Run the app (twice times) within the isolated environments (double click or type below command in Windows Terminal/Powershell):
+3. Run the app (twice times) within the isolated environments (double click the `exe` file or type below command in Windows Terminal/Powershell):
     ```
     .\SQLServerSync.exe
     ```
@@ -38,6 +41,7 @@ This repo was created due to the requirement of synchronous data between two SQL
 
 # Methodology
 
-1. First the app will export all data of source table into a CSV file (located in `./data` folder)
-2. Then manually copy the CSV file from source environment to destination environment
-3. Lastly import the data into destination table by running the app again
+1. First the app will export all data of source table into a CSV/xlsx file
+2. The exported file will be saved `fileFolder` if specified, otherwise save to default folder `./data`
+3. Then manually copy the CSV/xlsx file from source environment to destination environment
+4. Lastly import the data into destination table by running the app again
