@@ -1,10 +1,20 @@
 ﻿using ClosedXML.Excel;
 using CsvHelper;
+// using Microsoft.Data.SqlClient;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 
-run();
+
+if (args.Length > 0 && (args.ElementAt(0) == "-forever" || args.ElementAt(0) == "--forever"))
+{
+    runForever();
+}
+else
+{
+    runOnce();
+}
+
 
 /// <summary>convert string value into <see cref="SyncMode"/> (enum)</summary>
 static SyncMode parseSyncMode(string? value)
@@ -41,7 +51,6 @@ static void persistDataTableIntoCSVFile(string filePath, DataTable data)
     using (var csv = new CsvWriter(writer, System.Globalization.CultureInfo.InvariantCulture))
     {
         //csv.WriteRecords(data.AsEnumerable());
-
         var columns = data.Columns;
         // Write columns
         foreach (DataColumn column in columns)
@@ -155,28 +164,53 @@ static DataTable exportDataFromSQLServer(string connectionString, string table)
 /// <summary>persist the `data`(<see cref="DataTable"/> type) into the destination (SQL Server) table</summary>
 static void persistDataTableIntoSQLServer(string connectionString, string table, DataTable data)
 {
-    using var connection = new SqlConnection(connectionString);
-    connection.Open();
-    using SqlBulkCopy bulkCopy = new SqlBulkCopy(connection);
+    if (data == null || data.Rows.Count == 0)
+        return;
+    //using var connection = new SqlConnection(connectionString);
+    //connection.Open();
+    //using SqlBulkCopy bulkCopy = new SqlBulkCopy(connection);
+    using Microsoft.Data.SqlClient.SqlBulkCopy bulkCopy = new Microsoft.Data.SqlClient.SqlBulkCopy(connectionString, Microsoft.Data.SqlClient.SqlBulkCopyOptions.KeepIdentity);
+    if (data.Columns.Contains("id"))
+    {
+        // https://learn.microsoft.com/en-us/sql/connect/ado-net/sql/bulk-copy-order-hints
+        // Setup an order hint for the ProductNumber column.
+        Microsoft.Data.SqlClient.SqlBulkCopyColumnOrderHint hintNumber =
+            new Microsoft.Data.SqlClient.SqlBulkCopyColumnOrderHint("id", Microsoft.Data.SqlClient.SortOrder.Ascending);
+        bulkCopy.ColumnOrderHints.Add(hintNumber);
+    }
     bulkCopy.DestinationTableName = table;
     bulkCopy.BatchSize = 1024;
+
     bulkCopy.WriteToServer(data);
 }
 
 #endregion
 
-static void run()
+static void runForever()
 {
 
     do
     {
-        process();
+        runOnce();
         //Console.WriteLine("Congratulations!");
-        Console.WriteLine("㊗㊗㊗㊗㊗㊗㊗㊗㊗㊗㊗㊗㊗㊗㊗㊗");
+        Console.WriteLine("Congratulations!!!");
         int interval = int.Parse(ConfigurationManager.AppSettings["intervalInSecond"] ?? "86400");
         Console.WriteLine("next processing time: " + DateTime.Now.AddSeconds(interval));
         Thread.Sleep(interval * 1000);
     } while (true);
+}
+
+static void runOnce()
+{
+    try
+    {
+        process();
+    }
+    catch (Exception e)
+    {
+        Console.WriteLine(e?.InnerException?.Message ?? e?.Message);
+        Console.WriteLine("press any key to continue...");
+    }
 }
 
 /// <summary>main business logic</summary>
@@ -184,16 +218,15 @@ static void process()
 {
     var syncModeStr = ConfigurationManager.AppSettings["syncMode"];
     SyncMode thisSyncMode = parseSyncMode(syncModeStr);
-    var sourceTable = ConfigurationManager.AppSettings["source"];
-    var destinationTable = ConfigurationManager.AppSettings["destination"];
+    var tables = ConfigurationManager.AppSettings["table"];
     var _fileFormat = ConfigurationManager.AppSettings["fileFormat"];
     var fileFolder = ConfigurationManager.AppSettings["fileFolder"];
     var sourceDB = ConfigurationManager.ConnectionStrings["sourceDB"]?.ConnectionString;
     var destinationDB = ConfigurationManager.ConnectionStrings["destinationDB"]?.ConnectionString;
 
     /// assertion all the arguments are specified
-    if (string.IsNullOrEmpty(sourceTable)) throw new ArgumentNullException(nameof(sourceTable));
-    if (string.IsNullOrEmpty(destinationTable)) throw new ArgumentNullException(nameof(destinationTable));
+    if (string.IsNullOrEmpty(tables)) throw new ArgumentNullException(nameof(tables));
+    var tableList = tables.Split(',', StringSplitOptions.RemoveEmptyEntries);
     if (string.IsNullOrEmpty(sourceDB)) throw new ArgumentNullException(nameof(sourceDB));
     if (string.IsNullOrEmpty(destinationDB)) throw new ArgumentNullException(nameof(destinationDB));
 
@@ -203,49 +236,58 @@ static void process()
     if (!Directory.Exists(fileFolder)) Directory.CreateDirectory(fileFolder);
     // the path of the csv/excel file for transferring data
     string fileExtension = fileFormat == FileFormat.CSV ? "csv" : "xlsx";
-    var filePath = Path.Combine(fileFolder, $"{sourceTable}_{DateTime.Now.ToString("yyyyMMdd")}.{fileExtension}");
 
-    if (thisSyncMode == SyncMode.Export)
+    foreach (var table in tableList)
     {
-        // exporting data from source table
-        DataTable data = exportDataFromSQLServer(sourceDB, sourceTable);
-        if (data == null || data.Rows.Count == 0)
+        var filePath = Path.Combine(fileFolder, $"{table}_{DateTime.Now.ToString("yyyyMMdd")}.{fileExtension}");
+        if (thisSyncMode == SyncMode.Export)
         {
-            Console.WriteLine("empty source table, existing...");
-        }
-        else
-        {
-            // persist the data into csv/excel file
-            if (fileFormat == FileFormat.CSV)
-            {
-                persistDataTableIntoCSVFile(filePath, data);
-            }
-            else
-            {
-                persistDataTableIntoExcelFile(filePath, data);
-            }
-        }
-    }
-    else if (thisSyncMode == SyncMode.Import)
-    {
-        // importing data into destination table
-        if (!File.Exists(filePath))
-        {
-            Console.WriteLine($"file does NOT exist [{filePath}]");
-        }
-        else
-        {
-            DataTable data = fileFormat == FileFormat.CSV ? readDataFromCSVFile(filePath) : readDataFromExcelFile(filePath);
+            Console.WriteLine($"exporting [{table}]");
+            // exporting data from source table
+            DataTable data = exportDataFromSQLServer(sourceDB, table);
             if (data == null || data.Rows.Count == 0)
             {
-                Console.WriteLine("empty csv file, existing...");
+                Console.WriteLine("empty source table, continue...");
             }
             else
             {
-                // CAUTION: truncate destination table first
-                truncateDataTableInSQLServer(destinationDB, destinationTable);
-                // write the data into destination table
-                persistDataTableIntoSQLServer(destinationDB, destinationTable, data);
+                Console.WriteLine($"saving data into file [{filePath}]");
+                // persist the data into csv/excel file
+                if (fileFormat == FileFormat.CSV)
+                {
+                    persistDataTableIntoCSVFile(filePath, data);
+                }
+                else
+                {
+                    persistDataTableIntoExcelFile(filePath, data);
+                }
+                Console.WriteLine($"Done [{table}]");
+            }
+        }
+        else if (thisSyncMode == SyncMode.Import)
+        {
+            // importing data into destination table
+            if (!File.Exists(filePath))
+            {
+                Console.WriteLine($"exported file does NOT exist [{filePath}]");
+            }
+            else
+            {
+                Console.WriteLine($"reading data from file [{filePath}]");
+                DataTable data = fileFormat == FileFormat.CSV ? readDataFromCSVFile(filePath) : readDataFromExcelFile(filePath);
+                if (data == null || data.Rows.Count == 0)
+                {
+                    Console.WriteLine("empty csv file, continue...");
+                }
+                else
+                {
+                    Console.WriteLine($"importing into [{table}]");
+                    // CAUTION: truncate destination table first
+                    truncateDataTableInSQLServer(destinationDB, table);
+                    // write the data into destination table
+                    persistDataTableIntoSQLServer(destinationDB, table, data);
+                    Console.WriteLine($"Done [{table}]");
+                }
             }
         }
     }

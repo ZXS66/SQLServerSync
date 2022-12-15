@@ -8,8 +8,7 @@ This repo is aim to the synchronize data between two SQL Server instances, which
 1. [Download](https://github.com/ZXS66/SQLServerSync/releases) the executable file (or you can clone this repo and build the file yourself)
 2. Configure the app (twice times) in [App.config](#sample-appconfig). Supporting arguments as below:
     - `syncMode`: e/export or i/import
-    - `source`: source table to be exported
-    - `destination`: destination table to be imported
+    - `table`: source/destination table(s) to be exported/imported
 	- `fileFormat`: the extension of exported file, available options: `csv`, `excel`
 	- `fileFolder`: the folder that exported file to be saved (`./data` if not specified)
 	- `intervalInSecond`: the interval (in seconds) to re-run the app
@@ -29,8 +28,10 @@ This repo is aim to the synchronize data between two SQL Server instances, which
 	<appSettings>
 		<!--<add key="syncMode" value="export"/>-->
 		<add key="syncMode" value="import"/>
-		<add key="source" value="your_source_table"/>
-		<add key="destination" value="your_destination_table"/>
+		<add key="table" value="your_table1,your_table2,your_table3"/>
+		<add key="fileFormat" value="excel"/>
+		<add key="fileFolder" value="\\path\to\saved\your\files"/>
+		<add key="intervalInSecond" value="86400"/>
 	</appSettings>
 	<connectionStrings>
 		<add name="sourceDB" connectionString="Data Source=xxxx;Initial Catalog=your_source_db;user id=your_user_name;password=your_password"/>
@@ -41,7 +42,6 @@ This repo is aim to the synchronize data between two SQL Server instances, which
 
 # Methodology
 
-1. First the app will export all data of source table into a CSV/xlsx file
-2. The exported file will be saved `fileFolder` if specified, otherwise save to default folder `./data`
-3. Then manually copy the CSV/xlsx file from source environment to destination environment
-4. Lastly import the data into destination table by running the app again
+1. First the app will export all data of source table into a CSV/xlsx file, the exported file will be saved `fileFolder` if specified, otherwise save to default folder `./data`
+2. Then manually copy the CSV/xlsx file from source environment to destination environment
+3. Lastly import the data into destination table by running the app again
