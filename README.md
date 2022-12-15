@@ -3,6 +3,11 @@
 
 This repo is aim to the synchronize data between two SQL Server instances, which were located in two isolated environments (can NOT communicate with each other directly).
 
+# Prerequisite
+
+1. You have two SQL Server instances
+2. You have exactly same tables with same columns (name and sequence) between the two instances
+
 # How to use
 
 1. [Download](https://github.com/ZXS66/SQLServerSync/releases) the executable file (or you can clone this repo and build the file yourself)
