@@ -169,12 +169,15 @@ static void persistDataTableIntoSQLServer(string connectionString, string table,
     //connection.Open();
     //using SqlBulkCopy bulkCopy = new SqlBulkCopy(connection);
     using Microsoft.Data.SqlClient.SqlBulkCopy bulkCopy = new Microsoft.Data.SqlClient.SqlBulkCopy(connectionString, Microsoft.Data.SqlClient.SqlBulkCopyOptions.KeepIdentity);
-    if (data.Columns.Contains("id"))
+    string defaultOrderHint = "id";
+    if (data.Columns.Contains(defaultOrderHint))
     {
         // https://learn.microsoft.com/en-us/sql/connect/ado-net/sql/bulk-copy-order-hints
-        // Setup an order hint for the ProductNumber column.
+        // beware of letter case
+        int idxOfOrderHint = data.Columns.IndexOf(defaultOrderHint);
+        string realName = data.Columns[idxOfOrderHint].ColumnName;
         Microsoft.Data.SqlClient.SqlBulkCopyColumnOrderHint hintNumber =
-            new Microsoft.Data.SqlClient.SqlBulkCopyColumnOrderHint("id", Microsoft.Data.SqlClient.SortOrder.Ascending);
+            new Microsoft.Data.SqlClient.SqlBulkCopyColumnOrderHint(realName, Microsoft.Data.SqlClient.SortOrder.Ascending);
         bulkCopy.ColumnOrderHints.Add(hintNumber);
     }
     bulkCopy.DestinationTableName = table;

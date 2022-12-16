@@ -39,8 +39,8 @@ This repo is aim to the synchronize data between two SQL Server instances, which
 		<add key="intervalInSecond" value="86400"/>
 	</appSettings>
 	<connectionStrings>
-		<add name="sourceDB" connectionString="Data Source=xxxx;Initial Catalog=your_source_db;user id=your_user_name;password=your_password"/>
-		<add name="destinationDB" connectionString="Data Source=yyyy;Initial Catalog=your_destination_db;user id=your_user_name;password=your_password"/>
+		<add name="sourceDB" connectionString="Data Source=xxxx;Initial Catalog=your_source_db;user id=your_user_name;password=your_password;TrustServerCertificate=yes"/>
+		<add name="destinationDB" connectionString="Data Source=yyyy;Initial Catalog=your_destination_db;user id=your_user_name;password=your_password;TrustServerCertificate=yes"/>
 	</connectionStrings>
 </configuration>
 ```
