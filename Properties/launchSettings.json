@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "SQLServerSync": {
+      "commandName": "Project",
+      "commandLineArgs": "--once"
+    }
+  }
+}
