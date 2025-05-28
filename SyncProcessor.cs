@@ -169,6 +169,7 @@ public class SyncProcessor
     /// <summary>main business logic</summary>
     public void Process()
     {
+        int len = config.TableList.Count(), progress = 1;
         foreach (var table in config.TableList)
         {
             var filePath = Path.Combine(config.FileFolder, $"{table}_{DateTime.Now.ToString("yyyyMMdd")}.{config.FileExtension}");
@@ -222,6 +223,8 @@ public class SyncProcessor
                     }
                 }
             }
+            Console.WriteLine($"Progress {progress}/{len}");
+            progress++;
         }
         Console.WriteLine("✔️✔️ Winner Winner, Chicken Dinner!");
         Console.WriteLine("You may close the window to exit, or leave it alone and wait for next execution.");
